@@ -20,11 +20,6 @@ function log(req, res) {
 /**
  * Get a date one year from now.
  */
-function oneYearFromNow() {
-  var date = new Date;
-  date.setYear(date.getFullYear() + 1);
-  return date;
-}
 
 function parseCookie(req) {
   var cookies = {};
@@ -42,7 +37,24 @@ function parseCookie(req) {
 }
 
 function getSession(req) {
-  req.session = req.cookies['app_session'] || crypto.randomBytes(8).toString('hex');
+  if (req.cookies['app_session']) {
+    req.session = JSON.parse(req.cookies['app_session']);
+  }else{
+      req.session = {_id: crypto.randomBytes(8).toString('hex')};
+  }
+}
+
+
+function setSession(req,res) {
+  var expires = oneYearFromNow().toGMTString();
+  var serialized = encodeURIComponent(JSON.stringify(req.session));
+  res.setHeader('Set-Cookie', `app_session=${serialized}; Expires=${expires}; Path=/; HttpOnly`);
+}
+
+function oneYearFromNow() {
+  var date = new Date;
+  date.setYear(date.getFullYear() + 1);
+  return date;
 }
 /**
  * The main http application.
@@ -51,8 +63,9 @@ function app(req, res) {
   log(req);
   parseCookie(req);
   getSession(req);
-  var expires = oneYearFromNow().toGMTString();
-  res.setHeader('Set-Cookie', `app_session=${req.session}; Expires=${expires}; Path=/; HttpOnly`);
+  console.log(req.session);
+  req.session.login='cmather';
+  setSession(req,res);
   res.end();
 }
 
