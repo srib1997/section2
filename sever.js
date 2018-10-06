@@ -5,7 +5,7 @@
  */
 var http = require('http');
 var chalk = require('chalk');
-
+const crypto = require('crypto');
 /**
  * Log the HTTP request method, url and headers.
  */
@@ -41,14 +41,18 @@ function parseCookie(req) {
   req.cookies = cookies;
 }
 
+function getSession(req) {
+  req.session = req.cookies['app_session'] || crypto.randomBytes(8).toString('hex');
+}
 /**
  * The main http application.
  */
 function app(req, res) {
   log(req);
   parseCookie(req);
-  console.log(req.cookies);
-  res.setHeader('Set-Cookie', 'app_session=somevalue ; someotherkey=someothervalue');
+  getSession(req);
+  var expires = oneYearFromNow().toGMTString();
+  res.setHeader('Set-Cookie', `app_session=${req.session}; Expires=${expires}; Path=/; HttpOnly`);
   res.end();
 }
 
