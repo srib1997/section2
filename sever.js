@@ -31,7 +31,7 @@ function parseCookie(req) {
       var key = parts[0];
       var value = decodeURIComponent(parts[1]);
       cookies[key] = value;
-    })
+    });
   }
   req.cookies = cookies;
 }
@@ -40,7 +40,7 @@ function getSession(req) {
   if (req.cookies['app_session']) {
     req.session = JSON.parse(req.cookies['app_session']);
   }else{
-      req.session = {_id: crypto.randomBytes(8).toString('hex')};
+    resetSession(req);
   }
 }
 
@@ -49,6 +49,10 @@ function setSession(req,res) {
   var expires = oneYearFromNow().toGMTString();
   var serialized = encodeURIComponent(JSON.stringify(req.session));
   res.setHeader('Set-Cookie', `app_session=${serialized}; Expires=${expires}; Path=/; HttpOnly`);
+}
+
+function resetSession(req) {
+  req.session = {_id: crypto.randomBytes(8).toString('hex') };
 }
 
 function oneYearFromNow() {
@@ -61,12 +65,30 @@ function oneYearFromNow() {
  */
 function app(req, res) {
   log(req);
-  parseCookie(req);
+  parseCookie(req);//req.cookies=[]
   getSession(req);
   console.log(req.session);
-  req.session.login='cmather';
-  setSession(req,res);
-  res.end();
+  var action = `${req.method} ${req.url}`;
+
+  switch(action) {
+    case 'GET /':
+      setSession(req, res);
+      res.end('homepage\n');
+      break;
+    case 'GET /login':
+    //check 如果PW,AC係岩
+      resetSession(req);
+      req.session.user_id = 1;
+      req.session.logged_in = true;
+      setSession(req, res);
+      res.end('logged in');
+      break;
+    case 'GET /logout':
+      resetSession(req);
+      setSession(req, res);
+      res.end('logged out');
+      break;
+  }
 }
 
 /**
