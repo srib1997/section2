@@ -26,13 +26,29 @@ function oneYearFromNow() {
   return date;
 }
 
+function parseCookie(req) {
+  var cookies = {};
+  var pairs;
+  if (req.headers.cookie) {
+    pairs =req.headers.cookie.split(/; */);
+    pairs.forEach((cookie) => {
+      var parts = cookie.split('=');
+      var key = parts[0];
+      var value = decodeURIComponent(parts[1]);
+      cookies[key] = value;
+    })
+  }
+  req.cookies = cookies;
+}
+
 /**
  * The main http application.
  */
 function app(req, res) {
   log(req);
-  
-  res.setHeader('Set-Cookie', 'app_session=somevalue');
+  parseCookie(req);
+  console.log(req.cookies);
+  res.setHeader('Set-Cookie', 'app_session=somevalue ; someotherkey=someothervalue');
   res.end();
 }
 

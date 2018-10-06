@@ -11,5 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "chalk": "^2.4.1"
+  },
+  "dependencies": {
+    "curl-request": "^1.1.1"
   }
 }
