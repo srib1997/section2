@@ -6,6 +6,7 @@
 var http = require('http');
 var chalk = require('chalk');
 const crypto = require('crypto');
+
 /**
  * Log the HTTP request method, url and headers.
  */
@@ -36,9 +37,35 @@ function parseCookie(req) {
   req.cookies = cookies;
 }
 
+function sign(value) {
+  var secret = 'super duper secret';
+  var signature = crypto
+    .createHmac('sha256', secret)
+    .update(value)
+    .digest('base64');
+  return value + '--' + signature;
+}
+
+function unsign(value) {
+  var parts = value.split('--');
+  var originalValue = parts[0];
+  var checkedValue = sign(originalValue);
+  if (checkedValue === value)
+    return originalValue;
+    else {
+      return false;
+    }
+}
+
 function getSession(req) {
   if (req.cookies['app_session']) {
-    req.session = JSON.parse(req.cookies['app_session']);
+    var unsigned = unsign(req.cookies['app_session']);
+    if(unsigned)
+    req.session = JSON.parse(unsigned);
+    else {
+      console.error('cookie signature no match');
+      resetSession(req);
+    }
   }else{
     resetSession(req);
   }
@@ -47,7 +74,7 @@ function getSession(req) {
 
 function setSession(req,res) {
   var expires = oneYearFromNow().toGMTString();
-  var serialized = encodeURIComponent(JSON.stringify(req.session));
+  var serialized = encodeURIComponent(sign(JSON.stringify(req.session)));
   res.setHeader('Set-Cookie', `app_session=${serialized}; Expires=${expires}; Path=/; HttpOnly`);
 }
 
