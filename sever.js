@@ -5,22 +5,21 @@
  */
 var http = require('http');
 var chalk = require('chalk');
-const crypto = require('crypto');
+var crypto = require('crypto');
+var connect = require('connect');
+var app = connect();
 
-/**
- * Log the HTTP request method, url and headers.
- */
-function log(req, res) {
-  console.log( `${chalk.green(req.method)} ${chalk.cyan(req.url)}` );
-  for (var key in req.headers) {
-    console.log( `${chalk.blue(key.toUpperCase())}: ${req.headers[key]}` );
-  }
-  console.log('');
-}
-
+app.use( require('./logging.js')() );
+app.use( require('./cookies.js')() );
+app.use( require('./session.js')() );
 /**
  * Get a date one year from now.
  */
+ function oneYearFromNow() {
+   var date = new Date;
+   date.setYear(date.getFullYear() + 1);
+   return date;
+ }
 
 function parseCookie(req) {
   var cookies = {};
@@ -82,24 +81,16 @@ function resetSession(req) {
   req.session = {_id: crypto.randomBytes(8).toString('hex') };
 }
 
-function oneYearFromNow() {
-  var date = new Date;
-  date.setYear(date.getFullYear() + 1);
-  return date;
-}
 /**
  * The main http application.
  */
 function app(req, res) {
-  log(req);
-  parseCookie(req);//req.cookies=[]
-  getSession(req);
   console.log(req.session);
+
   var action = `${req.method} ${req.url}`;
 
   switch(action) {
     case 'GET /':
-      setSession(req, res);
       res.end('homepage\n');
       break;
     case 'GET /login':
